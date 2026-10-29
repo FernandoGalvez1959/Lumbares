@@ -57,6 +57,13 @@ ol,ul{margin:0 0 10px;padding-left:1.3rem}
 li{margin-bottom:6px}
 .ojo{background:var(--ambar-claro);border-left:6px solid var(--ambar);padding:8px 12px;border-radius:8px;font-size:.92rem}
 .dosis{display:inline-block;background:var(--verde-claro);border-radius:10px;padding:2px 10px;font-weight:700;margin-bottom:8px}
+
+/* dibujos */
+.anim{background:#F3F8F9;border:2px solid var(--linea);border-radius:14px;margin:6px 0 12px;overflow:hidden;min-height:60px}
+.anim svg{display:block;width:100%;height:auto}
+.segfig button{text-align:center}
+.segfig button[aria-pressed="true"]{background:var(--marino);color:#fff;font-weight:700}
+@media (prefers-color-scheme: dark){ .segfig button[aria-pressed="true"]{color:#0F2229} }
 /* modo guiado */
 .progreso{height:10px;background:var(--linea);border-radius:6px;overflow:hidden;margin-bottom:12px}
 .progreso div{height:100%;background:var(--verde);width:0;transition:width .3s}
@@ -92,6 +99,14 @@ li{margin-bottom:6px}
   <div id="rutinas"></div>
 
   <div class="card">
+    <h2>Dibujos de los ejercicios</h2>
+    <div class="fila segfig">
+      <button data-fig="h" aria-pressed="true">Hombre</button>
+      <button data-fig="m" aria-pressed="false">Mujer</button>
+    </div>
+  </div>
+
+  <div class="card">
     <h2>Esta semana</h2>
     <div class="semana" id="semana"></div>
     <p class="sub" id="semanaTxt" style="margin:10px 0 0"></p>
@@ -105,6 +120,10 @@ li{margin-bottom:6px}
 <section id="v-lista" class="hidden">
   <h1>Ejercicios</h1>
   <p class="sub">Todos, con la forma de hacerlos.</p>
+  <div class="fila segfig" style="margin-bottom:16px">
+    <button data-fig="h" aria-pressed="true">Hombre</button>
+    <button data-fig="m" aria-pressed="false">Mujer</button>
+  </div>
   <div id="listaEj"></div>
   <button class="primario" data-volver>Volver al inicio</button>
 </section>
@@ -116,6 +135,7 @@ li{margin-bottom:6px}
   <div class="card">
     <h2 id="gNombre"></h2>
     <div class="dosis" id="gDosis"></div>
+    <div class="anim" id="gAnim"></div>
     <div class="fase" id="fase"></div>
     <div class="reloj" id="reloj">0:00</div>
     <ol id="gPasos"></ol>
@@ -204,9 +224,136 @@ function $(id){ return document.getElementById(id); }
 function minutos(r){ var s=0; r.ids.forEach(function(i){ s+=porId(i).seg+PREP; }); return Math.round(s/60); }
 
 /* almacenamiento */
-function cargar(){ try { var d=JSON.parse(localStorage.getItem(KEY)); return d&&d.sesiones?d:{sesiones:[]}; } catch(e){ return {sesiones:[]}; } }
+function cargar(){ try { var d=JSON.parse(localStorage.getItem(KEY)); if(d&&d.sesiones){ d.fig=d.fig||"h"; return d; } return {sesiones:[],fig:"h"}; } catch(e){ return {sesiones:[],fig:"h"}; } }
 function guardar(d){ try { localStorage.setItem(KEY, JSON.stringify(d)); } catch(e){} }
 var mem = cargar();
+
+
+/* ===== Dibujos animados ===== */
+var LG={mu:27,fo:25,mus:40,sh:38,tor:62,cab:17};
+var COL={
+ h:{cam:"#2E8B73",camF:"#23705C",pan:"#1B4A5E",panF:"#133949",pelo:"#6E7B84",hip:9.5,hom:9.5,tw:19},
+ m:{cam:"#C45B84",camF:"#A44A6D",pan:"#5C4B8F",panF:"#483A73",pelo:"#8A5A44",hip:11.5,hom:8,tw:17}
+};
+var PIEL="#EBC09B",PIELF="#D4A57F",ZAP="#2A3B44";
+function M(b,o){var r={},k;for(k in b)r[k]=b[k];for(k in o)r[k]=o[k];return r;}
+function xy(a){return a[0].toFixed(1)+" "+a[1].toFixed(1);}
+function ik(root,tg,a,b,s){
+  var dx=tg[0]-root[0],dy=tg[1]-root[1],d=Math.sqrt(dx*dx+dy*dy);
+  var dm=Math.min(d,a+b-0.01); if(dm<1)dm=1;
+  var dir=Math.atan2(dy,dx);
+  var c=(a*a+dm*dm-b*b)/(2*a*dm); c=Math.max(-1,Math.min(1,c));
+  var ang=dir+s*Math.acos(c);
+  return {j:[root[0]+a*Math.cos(ang),root[1]+a*Math.sin(ang)],end:[root[0]+dm*Math.cos(dir),root[1]+dm*Math.sin(dir)]};
+}
+function mix(p,q,e){
+  var o={},k,a,b;
+  for(k in p){a=p[k];b=q[k];
+    if(b===undefined){o[k]=a;continue;}
+    if(Array.isArray(a))o[k]=[a[0]+(b[0]-a[0])*e,a[1]+(b[1]-a[1])*e];
+    else if(typeof a==="number")o[k]=a+(b-a)*e;
+    else o[k]=a;}
+  return o;
+}
+/* posturas base (hip=cadera, t=ángulo del tronco, f=pies, h=manos) */
+var SUP={hip:[190,139],t:180,f1:[232,139],f2:[226,139],h1:[176,137],h2:[171,139],arch:0,hd:0,cross:0,tw:0};
+var QUAD={hip:[200,107],t:190,f1:[238,146],f2:[232,146],h1:[139,146],h2:[133,146],arch:0,hd:-18,cross:0,tw:0};
+var TOP={hip:[190,86],t:180,k1:[205,86],k2:[203,86],f1:[230,86],f2:[228,86],h1:[128,136],h2:[128,36],arch:0,hd:0,cross:0,tw:4};
+var BS={k1:-1,k2:-1,e1:-1,e2:-1}, BQ={k1:1,k2:1,e1:-1,e2:-1};
+var TAB=M(SUP,{f1:[228,99],f2:[224,99],h1:[128,87],h2:[132,87]});
+var PIR=M(SUP,{t:190,f2:[208,118],cross:1,h1:[177,114],h2:[180,116]});
+var ANIM={
+ resp:{fd:-90,foco:.35,d:3200,b:BS,poses:[M(SUP,{h1:[166,130],h2:[170,131]}),M(SUP,{h1:[166,124],h2:[170,125],tw:6})]},
+ basc:{fd:-90,foco:.2,d:2200,b:BS,poses:[SUP,M(SUP,{hip:[190,133],t:174.5})]},
+ rodp:{fd:-90,foco:.2,d:1900,b:{k1:-1,k2:-1,e1:1,e2:1},poses:[SUP,M(SUP,{f1:[203,123],h1:[166,108],h2:[170,110]}),SUP,M(SUP,{f2:[203,123],h1:[166,108],h2:[170,110]})]},
+ rot:{top:true,fd:0,foco:.2,d:2200,b:BS,poses:[TOP,M(TOP,{k1:[212,54],k2:[208,58],f1:[232,86],f2:[230,84]}),TOP,M(TOP,{k1:[212,118],k2:[208,114],f1:[232,84],f2:[230,86]})]},
+ pir:{fd:-90,foco:0,d:2600,b:{k1:1,k2:-1,e1:-1,e2:-1},poses:[M(PIR,{t:182,f2:[214,126],h1:[184,114],h2:[186,116]}),PIR]},
+ puen:{fd:-90,foco:0,d:2200,b:BS,poses:[SUP,M(SUP,{hip:[185,112],t:154.65,h1:[177,138],h2:[172,139]})]},
+ bird:{fd:90,foco:.4,d:1900,b:BQ,poses:[QUAD,M(QUAD,{h2:[88,97],f1:[276,108]}),QUAD,M(QUAD,{h1:[88,97],f2:[274,109]})]},
+ dead:{fd:-90,foco:.5,d:2000,b:BS,poses:[TAB,M(TAB,{h1:[78,138],f2:[266,133]}),TAB,M(TAB,{h2:[78,138],f1:[268,133]})]},
+ gato:{fd:90,foco:.45,d:2400,b:BQ,poses:[M(QUAD,{arch:30,hd:-38}),M(QUAD,{arch:-22,hd:16})]},
+ esf:{fd:180,foco:.15,d:2800,b:{k1:-1,k2:-1,e1:-1,e2:-1},poses:[M(SUP,{hip:[199,138],f1:[270,143],f2:[266,143],h1:[88,143],h2:[92,143]}),M(SUP,{hip:[199,138],t:199,hd:-25,arch:-4,f1:[270,143],f2:[266,143],h1:[115,145],h2:[119,145]})]},
+ nino:{fd:90,foco:.2,d:3000,b:BQ,poses:[QUAD,M(QUAD,{hip:[228,126],t:177.2,hd:-17,f1:[232,146],f2:[228,146],h1:[120,146],h2:[116,146]})]}
+};
+function poseEn(id,tms){
+  var A=ANIM[id],n=A.poses.length;tms=Math.max(0,tms||0);var tt=tms%(n*A.d),i=Math.floor(tt/A.d),loc=(tt-i*A.d)/A.d;
+  var e=(loc-0.15)/0.7; e=e<0?0:e>1?1:e; e=(1-Math.cos(Math.PI*e))/2;
+  return mix(A.poses[i],A.poses[(i+1)%n],e);
+}
+function seg(pts,w,c){return '<path d="M'+pts.map(xy).join("L")+'" stroke="'+c+'" stroke-width="'+w+'" stroke-linecap="round" stroke-linejoin="round" fill="none"/>';}
+function dot(c,r,col){return '<circle cx="'+c[0].toFixed(1)+'" cy="'+c[1].toFixed(1)+'" r="'+r+'" fill="'+col+'"/>';}
+function figSVG(id,pose,fig,nombre){
+  var A=ANIM[id],C=COL[fig],hip=pose.hip,tr=pose.t*Math.PI/180,k1,k2,f1=pose.f1,f2=pose.f2,r;
+  var sh=[hip[0]+LG.tor*Math.cos(tr),hip[1]+LG.tor*Math.sin(tr)];
+  if(pose.k1){k1=pose.k1;k2=pose.k2;}
+  else{
+    r=ik(hip,f2,LG.mus,LG.sh,A.b.k2);k2=r.j;f2=r.end;
+    if(pose.cross>0){f1=[f1[0]+(k2[0]+3-f1[0])*pose.cross,f1[1]+(k2[1]-2-f1[1])*pose.cross];}
+    r=ik(hip,f1,LG.mus,LG.sh,A.b.k1);k1=r.j;f1=r.end;
+  }
+  var a1=ik(sh,pose.h1,LG.mu,LG.fo,A.b.e1),a2=ik(sh,pose.h2,LG.mu,LG.fo,A.b.e2);
+  var tw=C.tw+pose.tw,esc=tw/19;
+  var vx=sh[0]-hip[0],vy=sh[1]-hip[1],nx=-vy,ny=vx,nl=Math.sqrt(nx*nx+ny*ny)||1;
+  nx/=nl;ny/=nl;if(ny>0){nx=-nx;ny=-ny;}
+  var ctl=[(hip[0]+sh[0])/2+nx*pose.arch,(hip[1]+sh[1])/2+ny*pose.arch];
+  var u=A.foco,fo=[(1-u)*(1-u)*hip[0]+2*(1-u)*u*ctl[0]+u*u*sh[0],(1-u)*(1-u)*hip[1]+2*(1-u)*u*ctl[1]+u*u*sh[1]];
+  var na=(pose.t+pose.hd)*Math.PI/180,nv=[Math.cos(na),Math.sin(na)];
+  var hc=[sh[0]+LG.cab*nv[0],sh[1]+LG.cab*nv[1]];
+  var fa=A.fd*Math.PI/180,fv=[Math.cos(fa),Math.sin(fa)];
+  var s='<svg xmlns="http://www.w3.org/2000/svg" viewBox="50 30 250 130" role="img" aria-label="Dibujo animado: '+(nombre||id)+'">';
+  s+='<rect x="50" y="30" width="250" height="130" fill="#F3F8F9"/>';
+  if(A.top){s+='<rect x="64" y="34" width="224" height="122" rx="14" fill="#CFE1E6"/>';}
+  else{s+='<rect x="50" y="150" width="250" height="10" fill="#DCE9ED"/><rect x="58" y="150" width="236" height="6" rx="3" fill="#8FB8C4"/>';}
+  /* lado lejano */
+  s+=seg([hip,k2,f2],9,C.panF)+dot(f2,5.5,ZAP);
+  s+=seg([sh,a2.j],7,C.camF)+seg([a2.j,a2.end],6,PIELF)+dot(a2.end,4.5,PIELF);
+  /* tronco */
+  s+='<path d="M'+xy(hip)+'Q'+xy(ctl)+' '+xy(sh)+'" stroke="'+C.cam+'" stroke-width="'+tw+'" stroke-linecap="round" fill="none"/>';
+  s+=dot(hip,C.hip*esc,C.pan)+dot(sh,C.hom*esc,C.cam);
+  var pulso=.35+.2*Math.sin(Date.now()/350);
+  s+='<circle cx="'+fo[0].toFixed(1)+'" cy="'+fo[1].toFixed(1)+'" r="10" fill="#FFB020" fill-opacity="'+pulso.toFixed(2)+'" stroke="#E58A00" stroke-width="2"/>';
+  /* lado cercano */
+  s+=seg([hip,k1,f1],9,C.pan)+dot(f1,5.5,ZAP);
+  s+=seg([sh,a1.j],7,C.cam)+seg([a1.j,a1.end],6,PIEL)+dot(a1.end,4.5,PIEL);
+  /* cabeza */
+  s+=seg([sh,hc],7,PIEL);
+  if(fig==="m"){var ps=[hc[0]-9*fv[0],hc[1]-9*fv[1]];s+=seg([ps,[ps[0]-13*nv[0],ps[1]-13*nv[1]]],5,C.pelo);}
+  s+=dot([hc[0]-2.5*fv[0],hc[1]-2.5*fv[1]],11,C.pelo)+dot([hc[0]+3*fv[0],hc[1]+3*fv[1]],9,PIEL);
+  s+=dot([hc[0]+6.5*fv[0],hc[1]+6.5*fv[1]],1.5,ZAP);
+  return s+'</svg>';
+}
+var LIENZOS=[],REDUCIR=!!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches);
+var VIGILA=("IntersectionObserver" in window)?new IntersectionObserver(function(es){es.forEach(function(e){e.target._vis=e.isIntersecting;});}):null;
+function pintaLienzo(el,t){
+  var id=el._ej; if(!ANIM[id])return;
+  el.innerHTML=figSVG(id,REDUCIR?ANIM[id].poses[1]:poseEn(id,t),mem.fig,el._nom);
+}
+function montarAnim(el,id,nombre){
+  el._ej=id;el._nom=nombre;el._t0=performance.now();el._vis=true;
+  if(LIENZOS.indexOf(el)<0){LIENZOS.push(el);if(VIGILA)VIGILA.observe(el);}
+  pintaLienzo(el,0);
+}
+var ultimoFr=0;
+function bucle(ts){
+  requestAnimationFrame(bucle);
+  if(REDUCIR||document.hidden||ts-ultimoFr<40)return; ultimoFr=ts;
+  for(var i=LIENZOS.length-1;i>=0;i--){
+    var el=LIENZOS[i];
+    if(!el.isConnected){LIENZOS.splice(i,1);continue;}
+    if(!el._vis||el.offsetParent===null)continue;
+    pintaLienzo(el,ts-el._t0);
+  }
+}
+requestAnimationFrame(bucle);
+function marcaFig(){
+  Array.prototype.forEach.call(document.querySelectorAll("[data-fig]"),function(b){
+    b.setAttribute("aria-pressed",b.getAttribute("data-fig")===mem.fig?"true":"false");
+  });
+  if(REDUCIR)LIENZOS.forEach(function(el){pintaLienzo(el,0);});
+}
+Array.prototype.forEach.call(document.querySelectorAll("[data-fig]"),function(b){
+  b.onclick=function(){mem.fig=b.getAttribute("data-fig");guardar(mem);marcaFig();};
+});
 
 /* vistas */
 var VISTAS=["inicio","lista","guiado","fin","hist"];
@@ -246,14 +393,14 @@ function pintarInicio(){
 /* lista */
 function tarjeta(e){
   var d=document.createElement("div"); d.className="card ej";
-  d.innerHTML="<h3>"+e.n+"</h3><div class='zona'>"+e.zona+"</div><div class='dosis'>"+e.dosis+"</div><ol>"+
+  d.innerHTML="<h3>"+e.n+"</h3><div class='zona'>"+e.zona+"</div><div class='dosis'>"+e.dosis+"</div><div class='anim'></div><ol>"+
     e.pasos.map(function(p){return "<li>"+p+"</li>";}).join("")+"</ol><div class='ojo'>"+e.ojo+"</div>";
   return d;
 }
 function pintarLista(){
   var c=$("listaEj"); c.innerHTML="";
-  EJ.forEach(function(e){ c.appendChild(tarjeta(e)); });
-  ver("lista");
+  EJ.forEach(function(e){ var t=tarjeta(e); c.appendChild(t); montarAnim(t.querySelector(".anim"),e.id,e.n); });
+  marcaFig(); ver("lista");
 }
 
 /* guiado */
@@ -282,6 +429,7 @@ function pintarPaso(){
   $("gNombre").textContent=e.n; $("gDosis").textContent=e.dosis;
   $("gPasos").innerHTML=e.pasos.map(function(p){return "<li>"+p+"</li>";}).join("");
   $("gOjo").textContent=e.ojo;
+  montarAnim($("gAnim"),e.id,e.n);
   S.fase="prep"; S.resta=PREP; pintarReloj();
 }
 function pintarReloj(){
@@ -351,7 +499,7 @@ $("btnLista").onclick=pintarLista;
 $("btnHist").onclick=pintarHist;
 Array.prototype.forEach.call(document.querySelectorAll("[data-volver]"),function(b){ b.onclick=function(){ ver("inicio"); }; });
 
-pintarInicio();
+pintarInicio(); marcaFig();
 
 if ("serviceWorker" in navigator){
   window.addEventListener("load",function(){ navigator.serviceWorker.register("sw.js").catch(function(){}); });
