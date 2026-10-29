@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Lumbares</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#17475A">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root{
+  --fondo:#EAF1F3; --tarjeta:#FFFFFF; --texto:#12323F; --suave:#4A6672;
+  --marino:#17475A; --verde:#1F7F68; --verde-claro:#D9EEE8; --ambar:#9A5B00; --ambar-claro:#FFF1D6;
+  --linea:#C5D5DB;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --fondo:#0F2229; --tarjeta:#172F38; --texto:#E8F1F4; --suave:#9DB5BF; --marino:#8CC7D9;
+    --verde:#5CC7A8; --verde-claro:#1C4A40; --ambar:#F0B35A; --ambar-claro:#3B2D12; --linea:#2C4852; }
+}
+*{box-sizing:border-box}
+html{font-size:20px}
+body{margin:0;background:var(--fondo);color:var(--texto);
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.5;
+  padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}
+main{max-width:640px;margin:0 auto;padding:16px 16px 40px}
+h1{font-size:1.9rem;margin:8px 0 0;letter-spacing:-.01em;color:var(--marino)}
+h2{font-size:1.25rem;margin:0 0 8px}
+p{margin:0 0 10px}
+.sub{color:var(--suave);margin-bottom:16px}
+.card{background:var(--tarjeta);border:2px solid var(--linea);border-radius:16px;padding:16px;margin-bottom:16px}
+.aviso{background:var(--ambar-claro);border-color:var(--ambar);}
+.aviso h2{color:var(--ambar)}
+button{font:inherit;cursor:pointer;min-height:56px;border-radius:14px;border:2px solid var(--marino);
+  background:var(--tarjeta);color:var(--texto);padding:10px 16px;width:100%;text-align:left}
+button:focus-visible,input:focus-visible{outline:4px solid var(--verde);outline-offset:2px}
+.rut{display:block;margin-bottom:12px}
+.rut b{display:block;font-size:1.1rem}
+.rut span{color:var(--suave);font-size:.9rem}
+.primario{background:var(--marino);color:#fff;text-align:center;font-weight:700;border-color:var(--marino)}
+@media (prefers-color-scheme: dark){ .primario{color:#0F2229} }
+.fila{display:flex;gap:10px}
+.fila button{text-align:center}
+.link{background:none;border:none;color:var(--marino);text-decoration:underline;min-height:48px;text-align:center}
+input[type=range]{width:100%;height:44px;accent-color:var(--verde)}
+.escala{display:flex;justify-content:space-between;color:var(--suave);font-size:.85rem}
+.valor{font-size:2.4rem;font-weight:700;text-align:center;color:var(--marino)}
+.semana{display:flex;justify-content:space-between;gap:6px}
+.dia{flex:1;text-align:center;font-size:.85rem;color:var(--suave)}
+.dia i{display:block;margin:4px auto 0;width:32px;height:32px;border-radius:50%;border:2px solid var(--linea)}
+.dia.hecho i{background:var(--verde);border-color:var(--verde)}
+.dia.hoy{font-weight:700;color:var(--texto)}
+.hidden{display:none}
+.ej h3{margin:0 0 4px;font-size:1.15rem}
+.zona{color:var(--suave);font-size:.9rem;margin-bottom:8px}
+ol,ul{margin:0 0 10px;padding-left:1.3rem}
+li{margin-bottom:6px}
+.ojo{background:var(--ambar-claro);border-left:6px solid var(--ambar);padding:8px 12px;border-radius:8px;font-size:.92rem}
+.dosis{display:inline-block;background:var(--verde-claro);border-radius:10px;padding:2px 10px;font-weight:700;margin-bottom:8px}
+/* modo guiado */
+.progreso{height:10px;background:var(--linea);border-radius:6px;overflow:hidden;margin-bottom:12px}
+.progreso div{height:100%;background:var(--verde);width:0;transition:width .3s}
+.reloj{font-size:4.2rem;font-weight:800;text-align:center;color:var(--marino);line-height:1.1;margin:6px 0}
+.fase{text-align:center;font-weight:700;color:var(--verde);min-height:1.6em}
+.hist li{list-style:none;border-bottom:1px solid var(--linea);padding:8px 0;margin:0}
+.hist{padding:0}
+@media (prefers-reduced-motion: reduce){ .progreso div{transition:none} }
+</style>
+</head>
+<body>
+<main>
+
+<!-- INICIO -->
+<section id="v-inicio">
+  <h1>Lumbares</h1>
+  <p class="sub">Ejercicios suaves para fortalecer la espalda baja y aliviar molestias.</p>
+
+  <div class="card aviso">
+    <h2>Antes de empezar</h2>
+    <p>Los ejercicios deben notarse, pero <b>nunca con dolor agudo</b>. Si algo duele de forma intensa, para.</p>
+    <p>Consulta con tu médico antes de hacerlos si tienes dolor que baja por la pierna, hormigueo, pérdida de fuerza, fiebre, dolor tras un golpe o problemas para controlar la orina.</p>
+  </div>
+
+  <div class="card">
+    <h2>¿Cómo está tu espalda hoy?</h2>
+    <div class="valor" id="antesVal">3</div>
+    <input type="range" id="antes" min="0" max="10" value="3" aria-label="Nivel de molestia de 0 a 10">
+    <div class="escala"><span>0 · sin molestia</span><span>10 · máxima</span></div>
+  </div>
+
+  <h2>Elige una rutina</h2>
+  <div id="rutinas"></div>
+
+  <div class="card">
+    <h2>Esta semana</h2>
+    <div class="semana" id="semana"></div>
+    <p class="sub" id="semanaTxt" style="margin:10px 0 0"></p>
+  </div>
+
+  <button class="link" id="btnLista">Ver todos los ejercicios</button>
+  <button class="link" id="btnHist">Ver mi historial</button>
+</section>
+
+<!-- LISTA -->
+<section id="v-lista" class="hidden">
+  <h1>Ejercicios</h1>
+  <p class="sub">Todos, con la forma de hacerlos.</p>
+  <div id="listaEj"></div>
+  <button class="primario" data-volver>Volver al inicio</button>
+</section>
+
+<!-- GUIADO -->
+<section id="v-guiado" class="hidden">
+  <div class="progreso"><div id="barra"></div></div>
+  <p class="sub" id="paso" style="margin-bottom:4px"></p>
+  <div class="card">
+    <h2 id="gNombre"></h2>
+    <div class="dosis" id="gDosis"></div>
+    <div class="fase" id="fase"></div>
+    <div class="reloj" id="reloj">0:00</div>
+    <ol id="gPasos"></ol>
+    <div class="ojo" id="gOjo"></div>
+  </div>
+  <div class="fila" style="margin-bottom:12px">
+    <button id="bAtras">Anterior</button>
+    <button id="bPausa" class="primario">Pausa</button>
+    <button id="bSig">Siguiente</button>
+  </div>
+  <button class="link" id="bSalir">Terminar ahora</button>
+</section>
+
+<!-- FIN -->
+<section id="v-fin" class="hidden">
+  <h1>¡Rutina terminada!</h1>
+  <p class="sub">Bien hecho. Ahora cuéntame cómo notas la espalda.</p>
+  <div class="card">
+    <h2>¿Cómo está ahora?</h2>
+    <div class="valor" id="despuesVal">3</div>
+    <input type="range" id="despues" min="0" max="10" value="3" aria-label="Nivel de molestia después, de 0 a 10">
+    <div class="escala"><span>0 · sin molestia</span><span>10 · máxima</span></div>
+  </div>
+  <p>Consejo: bebe agua y camina unos minutos a paso tranquilo. Caminar a diario ayuda mucho a la espalda baja.</p>
+  <button class="primario" id="bGuardar">Guardar y volver</button>
+</section>
+
+<!-- HISTORIAL -->
+<section id="v-hist" class="hidden">
+  <h1>Historial</h1>
+  <p class="sub">Tus últimas sesiones: molestia antes y después.</p>
+  <div class="card"><ul class="hist" id="histLista"></ul></div>
+  <button class="primario" data-volver>Volver al inicio</button>
+</section>
+
+</main>
+
+<script>
+"use strict";
+var EJ = [
+ {id:"resp", n:"Respiración con la barriga", zona:"Relaja la zona lumbar", seg:60, dosis:"6 respiraciones lentas",
+  pasos:["Túmbate boca arriba con las rodillas dobladas y los pies apoyados.","Pon una mano en la barriga.","Coge aire por la nariz y nota cómo sube la barriga.","Suelta el aire despacio por la boca."],
+  ojo:"Si te mareas, respira más suave y descansa."},
+ {id:"basc", n:"Balanceo de pelvis", zona:"Abdomen y lumbares", seg:45, dosis:"10 repeticiones",
+  pasos:["Boca arriba, rodillas dobladas, pies apoyados.","Suelta el aire y aplasta suavemente la zona lumbar contra el suelo.","Mantén 3 segundos y vuelve a la posición inicial."],
+  ojo:"El movimiento es pequeño. No empujes con fuerza."},
+ {id:"rodp", n:"Rodillas al pecho", zona:"Estira la zona lumbar", seg:60, dosis:"5 veces por pierna · 15 segundos",
+  pasos:["Boca arriba, lleva una rodilla hacia el pecho con las manos detrás del muslo.","Mantén 15 segundos respirando tranquilo.","Baja la pierna y repite con la otra."],
+  ojo:"Sin tirones. Si te molesta en la cadera, lleva la rodilla menos arriba."},
+ {id:"rot", n:"Rodillas a un lado y a otro", zona:"Movilidad de la espalda baja", seg:60, dosis:"8 veces por lado",
+  pasos:["Boca arriba, rodillas dobladas y juntas, brazos en cruz.","Deja caer las rodillas despacio hacia un lado, solo hasta donde sea cómodo.","Vuelve al centro y cambia de lado."],
+  ojo:"Los hombros se quedan pegados al suelo. Movimiento lento."},
+ {id:"pir", n:"Estiramiento del glúteo", zona:"Glúteo y cadera", seg:60, dosis:"30 segundos por lado",
+  pasos:["Boca arriba, rodillas dobladas.","Cruza el tobillo derecho sobre la rodilla izquierda.","Con las manos, tira suavemente del muslo izquierdo hacia ti.","Mantén 30 segundos y cambia de pierna."],
+  ojo:"Debes notar estiramiento en el glúteo, no dolor en la rodilla."},
+ {id:"puen", n:"Puente de glúteos", zona:"Glúteos y lumbares", seg:60, dosis:"10 repeticiones · 2 segundos arriba",
+  pasos:["Boca arriba, rodillas dobladas, pies separados al ancho de la cadera.","Aprieta los glúteos y sube la cadera hasta formar una línea de hombros a rodillas.","Mantén 2 segundos y baja despacio."],
+  ojo:"No arquees la espalda al subir. Sube hasta donde la línea esté recta."},
+ {id:"bird", n:"Brazo y pierna contrarios", zona:"Estabilidad lumbar", seg:90, dosis:"6 veces por lado · 5 segundos",
+  pasos:["A cuatro apoyos: manos bajo los hombros, rodillas bajo la cadera.","Estira un brazo y la pierna contraria, en línea con la espalda.","Mantén 5 segundos sin que la cadera se incline.","Vuelve y cambia de lado."],
+  ojo:"Si te cuesta, estira solo la pierna o solo el brazo. Rodillas sobre una manta."},
+ {id:"dead", n:"Bicho muerto", zona:"Abdomen profundo", seg:90, dosis:"6 veces por lado",
+  pasos:["Boca arriba, rodillas dobladas a 90° sobre la cadera y brazos hacia el techo.","Baja despacio el brazo derecho y la pierna izquierda sin que la espalda se despegue del suelo.","Vuelve y cambia de lado."],
+  ojo:"Si la espalda se arquea, haz el movimiento más pequeño."},
+ {id:"gato", n:"Gato y camello", zona:"Movilidad de columna", seg:60, dosis:"8 repeticiones lentas",
+  pasos:["A cuatro apoyos.","Suelta el aire, redondea la espalda y mete la barbilla.","Coge aire y baja el abdomen suavemente, mirando al frente.","Muévete despacio, sin forzar los extremos."],
+  ojo:"Rango cómodo. No busques el máximo."},
+ {id:"esf", n:"Esfinge (apoyo en antebrazos)", zona:"Extensión suave", seg:45, dosis:"30 segundos",
+  pasos:["Boca abajo, apoya los antebrazos con los codos bajo los hombros.","Deja la barriga y las caderas relajadas en el suelo.","Respira tranquilo."],
+  ojo:"Si aumenta el dolor o baja por la pierna, no la hagas y salta este ejercicio."},
+ {id:"nino", n:"Postura del niño", zona:"Descanso lumbar", seg:45, dosis:"30 segundos",
+  pasos:["A cuatro apoyos, lleva la cadera hacia los talones.","Estira los brazos al frente y apoya la frente.","Respira lento y relaja la espalda."],
+  ojo:"Si te molestan las rodillas, pon un cojín entre muslos y gemelos."}
+];
+var RUT = [
+ {id:"des", n:"Despertar", d:"Para empezar el día con la espalda suelta", ids:["basc","rodp","gato","nino"]},
+ {id:"sua", n:"Suave", d:"Ideal los días con más molestia", ids:["resp","basc","rodp","rot","pir","nino"]},
+ {id:"com", n:"Completa", d:"Estirar, movilizar y fortalecer", ids:["resp","basc","rodp","rot","pir","puen","bird","dead","gato","esf","nino"]}
+];
+var PREP = 8;
+var DIAS = ["L","M","X","J","V","S","D"];
+var KEY = "lumbares_v1";
+
+function porId(id){ for (var i=0;i<EJ.length;i++) if (EJ[i].id===id) return EJ[i]; }
+function $(id){ return document.getElementById(id); }
+function minutos(r){ var s=0; r.ids.forEach(function(i){ s+=porId(i).seg+PREP; }); return Math.round(s/60); }
+
+/* almacenamiento */
+function cargar(){ try { var d=JSON.parse(localStorage.getItem(KEY)); return d&&d.sesiones?d:{sesiones:[]}; } catch(e){ return {sesiones:[]}; } }
+function guardar(d){ try { localStorage.setItem(KEY, JSON.stringify(d)); } catch(e){} }
+var mem = cargar();
+
+/* vistas */
+var VISTAS=["inicio","lista","guiado","fin","hist"];
+function ver(n){
+  VISTAS.forEach(function(v){ $("v-"+v).classList.toggle("hidden", v!==n); });
+  window.scrollTo(0,0);
+  if (n==="inicio") pintarInicio();
+}
+
+/* inicio */
+function pintarInicio(){
+  var cont=$("rutinas"); cont.innerHTML="";
+  RUT.forEach(function(r){
+    var b=document.createElement("button"); b.className="rut";
+    b.innerHTML="<b>"+r.n+" · "+minutos(r)+" min</b><span>"+r.d+" · "+r.ids.length+" ejercicios</span>";
+    b.onclick=function(){ empezar(r); };
+    cont.appendChild(b);
+  });
+  var hoy=new Date(), dsem=(hoy.getDay()+6)%7;
+  var lunes=new Date(hoy.getFullYear(),hoy.getMonth(),hoy.getDate()-dsem);
+  var hechos={}, total=0;
+  mem.sesiones.forEach(function(s){
+    var f=new Date(s.fecha), fd=new Date(f.getFullYear(),f.getMonth(),f.getDate());
+    var diff=Math.round((fd-lunes)/86400000);
+    if (diff>=0 && diff<7){ hechos[diff]=true; total++; }
+  });
+  var sm=$("semana"); sm.innerHTML="";
+  DIAS.forEach(function(d,i){
+    var e=document.createElement("div");
+    e.className="dia"+(hechos[i]?" hecho":"")+(i===dsem?" hoy":"");
+    e.innerHTML=d+"<i></i>"; sm.appendChild(e);
+  });
+  $("semanaTxt").textContent = total===0 ? "Aún no has hecho ninguna rutina esta semana." :
+    total===1 ? "Has hecho 1 rutina esta semana." : "Has hecho "+total+" rutinas esta semana.";
+}
+
+/* lista */
+function tarjeta(e){
+  var d=document.createElement("div"); d.className="card ej";
+  d.innerHTML="<h3>"+e.n+"</h3><div class='zona'>"+e.zona+"</div><div class='dosis'>"+e.dosis+"</div><ol>"+
+    e.pasos.map(function(p){return "<li>"+p+"</li>";}).join("")+"</ol><div class='ojo'>"+e.ojo+"</div>";
+  return d;
+}
+function pintarLista(){
+  var c=$("listaEj"); c.innerHTML="";
+  EJ.forEach(function(e){ c.appendChild(tarjeta(e)); });
+  ver("lista");
+}
+
+/* guiado */
+var S=null, timer=null, lock=null, audioCtx=null;
+function pitar(largo){
+  try{
+    audioCtx = audioCtx || new (window.AudioContext||window.webkitAudioContext)();
+    var o=audioCtx.createOscillator(), g=audioCtx.createGain();
+    o.frequency.value=largo?660:880; g.gain.value=.15;
+    o.connect(g); g.connect(audioCtx.destination);
+    o.start(); o.stop(audioCtx.currentTime+(largo?.5:.15));
+  }catch(e){}
+  try{ if(navigator.vibrate) navigator.vibrate(largo?300:80); }catch(e){}
+}
+function fmt(s){ var m=Math.floor(s/60), r=s%60; return m+":"+(r<10?"0":"")+r; }
+function empezar(r){
+  S={r:r, i:0, fase:"prep", resta:PREP, pausa:false, antes:+$("antes").value};
+  try{ if(navigator.wakeLock) navigator.wakeLock.request("screen").then(function(l){lock=l;}).catch(function(){}); }catch(e){}
+  pitar(false);
+  ver("guiado"); pintarPaso(); arrancar();
+}
+function pintarPaso(){
+  var e=porId(S.r.ids[S.i]), n=S.r.ids.length;
+  $("paso").textContent="Ejercicio "+(S.i+1)+" de "+n;
+  $("barra").style.width=(S.i/n*100)+"%";
+  $("gNombre").textContent=e.n; $("gDosis").textContent=e.dosis;
+  $("gPasos").innerHTML=e.pasos.map(function(p){return "<li>"+p+"</li>";}).join("");
+  $("gOjo").textContent=e.ojo;
+  S.fase="prep"; S.resta=PREP; pintarReloj();
+}
+function pintarReloj(){
+  $("reloj").textContent=fmt(S.resta);
+  $("fase").textContent = S.pausa ? "En pausa" : (S.fase==="prep" ? "Colócate en la posición" : "¡Adelante, con calma!");
+  $("bPausa").textContent = S.pausa ? "Seguir" : "Pausa";
+}
+function arrancar(){
+  clearInterval(timer);
+  timer=setInterval(function(){
+    if (!S || S.pausa) return;
+    S.resta--;
+    if (S.resta<=0){
+      if (S.fase==="prep"){ S.fase="trab"; S.resta=porId(S.r.ids[S.i]).seg; pitar(false); }
+      else { pitar(true); siguiente(); return; }
+    }
+    pintarReloj();
+  },1000);
+}
+function siguiente(){
+  if (S.i>=S.r.ids.length-1){ terminar(); return; }
+  S.i++; pintarPaso();
+}
+function terminar(){
+  clearInterval(timer); timer=null;
+  try{ if(lock) lock.release(); }catch(e){} lock=null;
+  $("barra").style.width="100%";
+  $("despues").value=S.antes; $("despuesVal").textContent=S.antes;
+  ver("fin");
+}
+$("bSig").onclick=function(){ siguiente(); };
+$("bAtras").onclick=function(){ if(S.i>0){ S.i--; pintarPaso(); } else { pintarPaso(); } };
+$("bPausa").onclick=function(){ S.pausa=!S.pausa; pintarReloj(); };
+$("bSalir").onclick=function(){
+  clearInterval(timer); timer=null;
+  try{ if(lock) lock.release(); }catch(e){} lock=null;
+  S=null; ver("inicio");
+};
+
+/* fin */
+$("bGuardar").onclick=function(){
+  if (!S){ ver("inicio"); return; }
+  mem.sesiones.push({fecha:new Date().toISOString(), rutina:S.r.n, antes:S.antes, despues:+$("despues").value});
+  if (mem.sesiones.length>200) mem.sesiones=mem.sesiones.slice(-200);
+  guardar(mem); S=null; ver("inicio");
+};
+
+/* historial */
+function pintarHist(){
+  var l=$("histLista"); l.innerHTML="";
+  var ult=mem.sesiones.slice(-15).reverse();
+  if (!ult.length){ l.innerHTML="<li>Todavía no hay sesiones. Haz tu primera rutina y aparecerá aquí.</li>"; }
+  ult.forEach(function(s){
+    var f=new Date(s.fecha);
+    var li=document.createElement("li");
+    li.innerHTML="<b>"+f.toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long"})+"</b><br>"+
+      s.rutina+" · molestia "+s.antes+" → "+s.despues;
+    l.appendChild(li);
+  });
+  ver("hist");
+}
+
+/* eventos generales */
+$("antes").oninput=function(){ $("antesVal").textContent=this.value; };
+$("despues").oninput=function(){ $("despuesVal").textContent=this.value; };
+$("btnLista").onclick=pintarLista;
+$("btnHist").onclick=pintarHist;
+Array.prototype.forEach.call(document.querySelectorAll("[data-volver]"),function(b){ b.onclick=function(){ ver("inicio"); }; });
+
+pintarInicio();
+
+if ("serviceWorker" in navigator){
+  window.addEventListener("load",function(){ navigator.serviceWorker.register("sw.js").catch(function(){}); });
+}
+</script>
+</body>
+</html>
