@@ -113,7 +113,7 @@ li{margin-bottom:6px}
   </div>
 
   <button class="link" id="btnLista">Ver todos los ejercicios</button>
-  <button class="link" id="btnHist">Ver mi historial</button>
+  <button class="link" id="btnHist">Ver mi historial y copia de seguridad</button>
 </section>
 
 <!-- LISTA -->
@@ -168,6 +168,17 @@ li{margin-bottom:6px}
   <h1>Historial</h1>
   <p class="sub">Tus últimas sesiones: molestia antes y después.</p>
   <div class="card"><ul class="hist" id="histLista"></ul></div>
+
+  <div class="card">
+    <h2>Copia de seguridad</h2>
+    <p>Guarda tu historial en un archivo por si cambias de móvil o borras los datos del navegador.</p>
+    <p class="sub" id="copiaUlt" style="margin-bottom:12px"></p>
+    <button class="rut" id="bCopia"><b>Guardar copia en el móvil</b><span>Se descarga un archivo .json</span></button>
+    <button class="rut hidden" id="bEnviar"><b>Enviar copia a otra app</b><span>Drive, correo, WhatsApp…</span></button>
+    <button class="rut" id="bRestaurar"><b>Restaurar una copia</b><span>Elige el archivo .json guardado</span></button>
+    <input type="file" id="fCopia" accept=".json,application/json" class="hidden">
+    <p id="copiaMsg" role="status" style="margin:8px 0 0;font-weight:700"></p>
+  </div>
   <button class="primario" data-volver>Volver al inicio</button>
 </section>
 
@@ -489,8 +500,62 @@ function pintarHist(){
       s.rutina+" · molestia "+s.antes+" → "+s.despues;
     l.appendChild(li);
   });
-  ver("hist");
+  pintaCopiaUlt(); ver("hist");
 }
+
+
+/* ===== Copia de seguridad ===== */
+function datosCopia(){
+  return JSON.stringify({app:"lumbares",version:1,fecha:new Date().toISOString(),fig:mem.fig,sesiones:mem.sesiones});
+}
+function nombreCopia(){ return "lumbares-copia-"+new Date().toISOString().slice(0,10)+".json"; }
+function msgCopia(t){ $("copiaMsg").textContent=t; }
+function pintaCopiaUlt(){
+  $("copiaUlt").textContent = mem.copia ? "Última copia guardada: "+new Date(mem.copia).toLocaleDateString("es-ES",{day:"numeric",month:"long",year:"numeric"})+"." : "Todavía no has guardado ninguna copia.";
+}
+function marcaCopia(){ mem.copia=new Date().toISOString(); guardar(mem); pintaCopiaUlt(); }
+$("bCopia").onclick=function(){
+  var blob=new Blob([datosCopia()],{type:"application/json"});
+  var a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=nombreCopia();
+  document.body.appendChild(a); a.click();
+  setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },1500);
+  marcaCopia(); msgCopia("Copia guardada. Búscala en la carpeta Descargas.");
+};
+try{
+  var probe=new File(["{}"],"x.json",{type:"application/json"});
+  if(navigator.canShare&&navigator.canShare({files:[probe]})) $("bEnviar").classList.remove("hidden");
+}catch(e){}
+$("bEnviar").onclick=function(){
+  try{
+    var f=new File([datosCopia()],nombreCopia(),{type:"application/json"});
+    navigator.share({files:[f],title:"Copia de Lumbares"}).then(function(){ marcaCopia(); msgCopia("Copia enviada."); }).catch(function(){});
+  }catch(e){ msgCopia("No se ha podido enviar. Usa «Guardar copia en el móvil»."); }
+};
+$("bRestaurar").onclick=function(){ $("fCopia").value=""; $("fCopia").click(); };
+$("fCopia").onchange=function(){
+  var f=this.files&&this.files[0]; if(!f) return;
+  var r=new FileReader();
+  r.onload=function(){
+    try{
+      var d=JSON.parse(r.result);
+      if(!d||d.app!=="lumbares"||!Array.isArray(d.sesiones)) throw new Error("formato");
+      var vistos={}, nuevas=0;
+      mem.sesiones.forEach(function(s){ vistos[s.fecha]=true; });
+      d.sesiones.forEach(function(s){
+        if(s&&s.fecha&&!vistos[s.fecha]&&typeof s.rutina==="string"){
+          mem.sesiones.push({fecha:String(s.fecha),rutina:s.rutina,antes:+s.antes||0,despues:+s.despues||0});
+          vistos[s.fecha]=true; nuevas++;
+        }
+      });
+      mem.sesiones.sort(function(a,b){ return a.fecha<b.fecha?-1:1; });
+      if(mem.sesiones.length>200) mem.sesiones=mem.sesiones.slice(-200);
+      if(d.fig==="h"||d.fig==="m") mem.fig=d.fig;
+      guardar(mem); marcaFig(); pintarHist();
+      msgCopia(nuevas?("Copia restaurada: "+nuevas+(nuevas===1?" sesión añadida.":" sesiones añadidas.")):"La copia no traía sesiones nuevas.");
+    }catch(e){ msgCopia("Ese archivo no es una copia de Lumbares."); }
+  };
+  r.readAsText(f);
+};
 
 /* eventos generales */
 $("antes").oninput=function(){ $("antesVal").textContent=this.value; };
