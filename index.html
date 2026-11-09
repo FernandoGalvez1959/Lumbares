@@ -113,7 +113,9 @@ li{margin-bottom:6px}
   </div>
 
   <button class="link" id="btnLista">Ver todos los ejercicios</button>
-  <button class="link" id="btnHist">Ver mi historial y copia de seguridad</button>
+  <button class="link" id="btnHist">Ver mi historial</button>
+  <button class="rut" id="btnCopia" style="margin-top:8px"><b>Copia de seguridad</b><span>Guardar o restaurar tu historial</span></button>
+  <p class="sub" style="text-align:center;margin-top:16px;font-size:.8rem">Versión 4 · copia con fecha y nombre Lumbares</p>
 </section>
 
 <!-- LISTA -->
@@ -169,7 +171,7 @@ li{margin-bottom:6px}
   <p class="sub">Tus últimas sesiones: molestia antes y después.</p>
   <div class="card"><ul class="hist" id="histLista"></ul></div>
 
-  <div class="card">
+  <div class="card" id="cardCopia">
     <h2>Copia de seguridad</h2>
     <p>Guarda tu historial en un archivo por si cambias de móvil o borras los datos del navegador.</p>
     <p class="sub" id="copiaUlt" style="margin-bottom:12px"></p>
@@ -508,7 +510,10 @@ function pintarHist(){
 function datosCopia(){
   return JSON.stringify({app:"lumbares",version:1,fecha:new Date().toISOString(),fig:mem.fig,sesiones:mem.sesiones});
 }
-function nombreCopia(){ return "lumbares-copia-"+new Date().toISOString().slice(0,10)+".json"; }
+function nombreCopia(){
+  var d=new Date(), m=d.getMonth()+1, dia=d.getDate();
+  return d.getFullYear()+(m<10?"0":"")+m+(dia<10?"0":"")+dia+" Lumbares.json";
+}
 function msgCopia(t){ $("copiaMsg").textContent=t; }
 function pintaCopiaUlt(){
   $("copiaUlt").textContent = mem.copia ? "Última copia guardada: "+new Date(mem.copia).toLocaleDateString("es-ES",{day:"numeric",month:"long",year:"numeric"})+"." : "Todavía no has guardado ninguna copia.";
@@ -562,6 +567,7 @@ $("antes").oninput=function(){ $("antesVal").textContent=this.value; };
 $("despues").oninput=function(){ $("despuesVal").textContent=this.value; };
 $("btnLista").onclick=pintarLista;
 $("btnHist").onclick=pintarHist;
+$("btnCopia").onclick=function(){ pintarHist(); $("cardCopia").scrollIntoView(); };
 Array.prototype.forEach.call(document.querySelectorAll("[data-volver]"),function(b){ b.onclick=function(){ ver("inicio"); }; });
 
 pintarInicio(); marcaFig();
