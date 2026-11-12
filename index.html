@@ -95,6 +95,13 @@ li{margin-bottom:6px}
     <div class="escala"><span>0 · sin molestia</span><span>10 · máxima</span></div>
   </div>
 
+  <p class="sub" id="autoMsg" style="font-size:.85rem"></p>
+  <div class="card" id="avisoVacio" style="display:none">
+    <h2>¿No ves tu historial?</h2>
+    <p>Si ya usabas Lumbares y has borrado los datos del navegador o has cambiado de móvil, restaura tu última copia (archivo «Lumbares» y la fecha).</p>
+    <button class="rut" id="bAvisoRest"><b>Restaurar copia</b><span>Elige el archivo .json guardado</span></button>
+  </div>
+
   <h2>Elige una rutina</h2>
   <div id="rutinas"></div>
 
@@ -115,7 +122,7 @@ li{margin-bottom:6px}
   <button class="link" id="btnLista">Ver todos los ejercicios</button>
   <button class="link" id="btnHist">Ver mi historial</button>
   <button class="rut" id="btnCopia" style="margin-top:8px"><b>Copia de seguridad</b><span>Guardar o restaurar tu historial</span></button>
-  <p class="sub" style="text-align:center;margin-top:16px;font-size:.8rem">Versión 4 · copia con fecha y nombre Lumbares</p>
+  <p class="sub" style="text-align:center;margin-top:16px;font-size:.8rem">Versión 5 · copia automática al iniciar</p>
 </section>
 
 <!-- LISTA -->
@@ -238,7 +245,26 @@ function minutos(r){ var s=0; r.ids.forEach(function(i){ s+=porId(i).seg+PREP; }
 
 /* almacenamiento */
 function cargar(){ try { var d=JSON.parse(localStorage.getItem(KEY)); if(d&&d.sesiones){ d.fig=d.fig||"h"; return d; } return {sesiones:[],fig:"h"}; } catch(e){ return {sesiones:[],fig:"h"}; } }
-function guardar(d){ try { localStorage.setItem(KEY, JSON.stringify(d)); } catch(e){} }
+function guardar(d){ try { localStorage.setItem(KEY, JSON.stringify(d)); } catch(e){} idbGuardar(d); }
+function idbAbrir(cb){
+  try{
+    var r=indexedDB.open("lumbares",1);
+    r.onupgradeneeded=function(){ r.result.createObjectStore("kv"); };
+    r.onsuccess=function(){ cb(r.result); };
+    r.onerror=function(){ cb(null); };
+  }catch(e){ cb(null); }
+}
+function idbGuardar(d){
+  idbAbrir(function(db){ if(!db) return; try{ db.transaction("kv","readwrite").objectStore("kv").put(JSON.parse(JSON.stringify(d)),"mem"); }catch(e){} });
+}
+function idbLeer(cb){
+  idbAbrir(function(db){
+    if(!db){ cb(null); return; }
+    try{ var q=db.transaction("kv","readonly").objectStore("kv").get("mem"); q.onsuccess=function(){ cb(q.result||null); }; q.onerror=function(){ cb(null); }; }
+    catch(e){ cb(null); }
+  });
+}
+try{ if(navigator.storage&&navigator.storage.persist) navigator.storage.persist().catch(function(){}); }catch(e){}
 var mem = cargar();
 
 
@@ -393,6 +419,7 @@ function pintarInicio(){
     var diff=Math.round((fd-lunes)/86400000);
     if (diff>=0 && diff<7){ hechos[diff]=true; total++; }
   });
+  $("avisoVacio").style.display = mem.sesiones.length ? "none" : "block";
   var sm=$("semana"); sm.innerHTML="";
   DIAS.forEach(function(d,i){
     var e=document.createElement("div");
@@ -510,9 +537,17 @@ function pintarHist(){
 function datosCopia(){
   return JSON.stringify({app:"lumbares",version:1,fecha:new Date().toISOString(),fig:mem.fig,sesiones:mem.sesiones});
 }
-function nombreCopia(){
+function hoyStr(){
   var d=new Date(), m=d.getMonth()+1, dia=d.getDate();
-  return d.getFullYear()+(m<10?"0":"")+m+(dia<10?"0":"")+dia+" Lumbares.json";
+  return d.getFullYear()+(m<10?"0":"")+m+(dia<10?"0":"")+dia;
+}
+function nombreCopia(){ return "Lumbares "+hoyStr()+".json"; }
+function descargaCopia(){
+  var blob=new Blob([datosCopia()],{type:"application/json"});
+  var a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=nombreCopia();
+  document.body.appendChild(a); a.click();
+  setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },1500);
+  return a.download;
 }
 function msgCopia(t){ $("copiaMsg").textContent=t; }
 function pintaCopiaUlt(){
@@ -520,11 +555,8 @@ function pintaCopiaUlt(){
 }
 function marcaCopia(){ mem.copia=new Date().toISOString(); guardar(mem); pintaCopiaUlt(); }
 $("bCopia").onclick=function(){
-  var blob=new Blob([datosCopia()],{type:"application/json"});
-  var a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=nombreCopia();
-  document.body.appendChild(a); a.click();
-  setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },1500);
-  marcaCopia(); msgCopia("Copia guardada. Búscala en la carpeta Descargas.");
+  var n=descargaCopia();
+  marcaCopia(); msgCopia("Copia guardada: "+n+". Búscala en la carpeta Descargas.");
 };
 try{
   var probe=new File(["{}"],"x.json",{type:"application/json"});
@@ -562,6 +594,17 @@ $("fCopia").onchange=function(){
   r.readAsText(f);
 };
 
+/* ===== Copia automática al iniciar (una vez al día) ===== */
+function arrancaCopiaAuto(){
+  if(!mem.sesiones.length) return;
+  var h=hoyStr();
+  if(mem.auto===h){ $("autoMsg").textContent="Copia automática de hoy ya guardada: "+nombreCopia()+" (carpeta Descargas)."; return; }
+  mem.auto=h; mem.copia=new Date().toISOString(); guardar(mem);
+  try{ var n=descargaCopia(); $("autoMsg").textContent="Copia automática guardada en Descargas: "+n; }
+  catch(e){ $("autoMsg").textContent="No se pudo hacer la copia automática. Usa «Copia de seguridad»."; }
+}
+$("bAvisoRest").onclick=function(){ pintarHist(); $("bRestaurar").onclick(); };
+
 /* eventos generales */
 $("antes").oninput=function(){ $("antesVal").textContent=this.value; };
 $("despues").oninput=function(){ $("despuesVal").textContent=this.value; };
@@ -571,6 +614,13 @@ $("btnCopia").onclick=function(){ pintarHist(); $("cardCopia").scrollIntoView();
 Array.prototype.forEach.call(document.querySelectorAll("[data-volver]"),function(b){ b.onclick=function(){ ver("inicio"); }; });
 
 pintarInicio(); marcaFig();
+var hayLS=false; try{ hayLS=localStorage.getItem(KEY)!==null; }catch(e){}
+if(!hayLS){
+  idbLeer(function(v){
+    if(v&&v.sesiones&&v.sesiones.length){ mem=v; mem.fig=mem.fig||"h"; guardar(mem); pintarInicio(); marcaFig(); }
+    arrancaCopiaAuto();
+  });
+} else { arrancaCopiaAuto(); }
 
 if ("serviceWorker" in navigator){
   window.addEventListener("load",function(){ navigator.serviceWorker.register("sw.js").catch(function(){}); });
